@@ -5,12 +5,12 @@ Export users from the DSD mongodb and filter out any unwanted users by email add
 - Place all unwanted email addresses in file: liferay/input/unwanted_emails.csv
 - run batch: mongodb/export and filter emails.kjb
   
-  batch expects input configuration: ../../config/mongodb.properties
-      mongo_server=
-      mongo_port=
-      mongo_database=
-      mongo_user=
-      mongo_pw=
+  batch expects input configuration: ../../config/mongodb.properties<br>
+      mongo_server=<br>
+      mongo_port=<br>
+      mongo_database=<br>
+      mongo_user=<br>
+      mongo_pw=<br>
 
 Export users from Liferay and filter out any unwanted users by email address:
 - Go to Liferay console and under users export to csv. Place export file in file: liferay/input/liferay_eported_users.csv
