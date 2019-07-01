@@ -17,12 +17,12 @@ Export users from Liferay and filter out any unwanted users by email address:
 - Place all unwanted email addresses in file: liferay/input/unwanted_emails.csv
 - run batch: liferay/filter emails.kjb
   
-  batch expects input configuration: ../../config/liferay.properties
-  liferay_url=
-  client_id=
-  client_secret=
-  companyid=
-  scope=
+  batch expects input configuration: ../../config/liferay.properties<br>
+  liferay_url=<br>
+  client_id=<br>
+  client_secret=<br>
+  companyid=<br>
+  scope=<br>
 
 Merge output from Liferay and from MongoDB to get single list of users. (liferay values overrule mongodb values):
 - Place liferay output in file: merge_valid_users/input/liferay_valid_users.csv
@@ -33,10 +33,10 @@ Upload exported, filtered and merged users to Keycloak:
 - Place merged output in file: keycloak/input/merged_users.csv
 - run batch:keycloak/import_users.kjb
   
-  batch expects input configuration: ../../config/keycloak.properties
-  keycloak_url=
-  client_id=
-  client_secret=
-  scope=
+  batch expects input configuration: ../../config/keycloak.properties<br>
+  keycloak_url=<br>
+  client_id=<br>
+  client_secret=<br>
+  scope=<br>
 
 
