@@ -4,6 +4,14 @@ MyDeltares usermanagement scripts
 Export users from the DSD mongodb and filter out any unwanted users by email address:
 - Place all unwanted email addresses in file: liferay/input/unwanted_emails.csv
 - run batch: mongodb/export and filter emails.kjb
+  batch expects input configuration: ../../config/mongodb.properties
+  {code}
+mongo_server=
+mongo_port=
+mongo_database=
+mongo_user=
+mongo_pw=
+{code}
 
 Export users from Liferay and filter out any unwanted users by email address:
 - Go to Liferay console and under users export to csv. Place export file in file: liferay/input/liferay_eported_users.csv
