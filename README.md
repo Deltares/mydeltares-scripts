@@ -4,4 +4,4 @@ This repository contains a wide variaty of scripts that are being used within th
 
 
 <h2>Pentaho</h2>
-The folder 'pentaho' conatains ETL scripts written in the data integration tool Pentaho. These scripts mostly handle the management of user data. More information can be found in the README.md file located in the pentaho folder.
+The folder 'pentaho' contains ETL scripts written in the data integration tool Pentaho. These scripts mostly handle the management of user data. More information can be found in the README.md file located in the pentaho folder.
