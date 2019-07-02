@@ -1,4 +1,3 @@
-# mydeltares-scripts
 <h1>MyDeltares scripts</h1>
 
 This repository contains a wide variaty of scripts that are being used within the MyDeltares project. These scripts can relate to data management and data cleanup or to operational tasks. 
