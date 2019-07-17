@@ -13,8 +13,8 @@ max_attempts = 5
 
 db_host = '136.231.52.57'
 db_name = 'apachelogcache'
-db_username = 'apachelog'
-db_password = 'Iehe4oomuhi9eo3a'
+db_username = 'xxxx'
+db_password = 'xxxx'
 db_charset = 'latin1' # ugh
 test_query = 'SELECT 1' # simple query to test connection to db
 insert_query = 'INSERT INTO oss_svn (id, time_stamp, request_method, remote_user, remote_host, request_uri) VALUES (%s, %s, %s, %s, %s, %s)'
