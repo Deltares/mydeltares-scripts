@@ -60,7 +60,6 @@ def init_ini_file():
         global log_file
         global log_level
         global log_maxsize
-        # global scope
 
         global apache_logfile
         global apache_logfile_name
@@ -141,7 +140,8 @@ def call_rest_api(method, user, host, uri):
         response = requests.post(url + API_PATH,
                                  data=dump,
                                  headers={'Authorization': 'Bearer ' + str(access_token),
-                                          'Content-Type': 'application/json'})
+                                          'Content-Type': 'application/json'},
+                                 verify=False)
 
         response.raise_for_status()
         logging.info("Successfully uploaded repository log " + dump)
@@ -165,7 +165,8 @@ def get_access_token():
             response = requests.post(url + ACCESS_TOKEN_PATH,
                                      data={'grant_type': 'client_credentials',
                                            'client_id': client_id, 'client_secret': client_secret},
-                                     headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                                     headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                                     verify=False)
 
             response.raise_for_status()
             body = response.json()
