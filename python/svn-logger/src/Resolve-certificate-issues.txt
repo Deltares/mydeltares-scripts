@@ -1,0 +1,29 @@
+Analyse certificate problems:
+
+https://www.ssllabs.com
+
+
+How to resolve issue problems in python:
+
+https://stackoverflow.com/questions/28667684/python-requests-getting-sslerror
+
+
+The certificate for oss.deltares.nl is valid, but it is missing a chain certificate as shown in the report by ssllabs:
+
+Chain issues    Incomplete
+....
+2   Extra download  Thawte DV SSL CA
+Fingerprint:  beb8efe9b1a73c841b375a90e5fff8048848e3a2af66f6c4dd7b938d6fe8c5d8
+
+The "Incomplete" and "Extra download" are the major points. Some browsers will have the missing chain certificate cached,
+others will do the download and other will fail.
+
+Download the missing chain certificates and use it as trusted CA certificate with the verify parameter for requests.
+Don't just disable validation because then you are open to man-in-the-middle attacks.
+
+Step by step instruction:
+
+    Download the missing certificate chain using download button from the report by ssllabs
+
+    Modify your call to
+    requests.get('https://oss.deltares.nl', verify = 'oss.deltares.nl-chain.pem')

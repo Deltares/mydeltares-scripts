@@ -1,16 +1,16 @@
 #!/usr/bin/env python
+import json
 import logging
 import os
 import re
 import sys
 import time
-import json
+from logging.handlers import RotatingFileHandler
 
 import configparser
 import requests
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from logging.handlers import RotatingFileHandler
 
 ACCESS_TOKEN_PATH = "/o/oauth2/token"
 API_PATH = "/api/jsonws/invoke"
@@ -141,7 +141,7 @@ def call_rest_api(method, user, host, uri):
                                  data=dump,
                                  headers={'Authorization': 'Bearer ' + str(access_token),
                                           'Content-Type': 'application/json'},
-                                 verify=False)
+                                 verify='oss.deltares.nl-chain.pem')
 
         response.raise_for_status()
         logging.info("Successfully uploaded repository log " + dump)
@@ -166,7 +166,7 @@ def get_access_token():
                                      data={'grant_type': 'client_credentials',
                                            'client_id': client_id, 'client_secret': client_secret},
                                      headers={'Content-Type': 'application/x-www-form-urlencoded'},
-                                     verify=False)
+                                     verify='oss.deltares.nl-chain.pem')
 
             response.raise_for_status()
             body = response.json()
