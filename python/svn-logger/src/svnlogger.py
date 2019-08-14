@@ -97,17 +97,25 @@ def init_logging():
     if len(log_dir) > 0 and not os.path.isdir(log_dir):
         os.mkdir(log_dir)
 
-    logging.basicConfig(level=log_level, format='%(asctime)s %(message)s',
-                        datefmt='%Y/%m/%d %H:%M:%S')
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=log_level, datefmt='%Y/%m/%d %H:%M:%S')
     global logger
     logger = logging.getLogger("svnlogger")
     handler = logging.handlers.RotatingFileHandler(filename=log_file, maxBytes=log_maxsize, backupCount=5, delay=0)
+    handler.setLevel(log_level)
+    handler.setFormatter(logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s',datefmt='%Y/%m/%d %H:%M:%S'))
     logger.addHandler(handler)
 
 
 def check_variables():
     if apache_logfile is None:
-        logger.error("No apache_log_file define" % apache_logfile)
+        logger.error("No apache_log_file defined")
+        return False
+
+    pemfile = os.path.realpath('oss.deltares.nl-chain.pem')
+    if os.path.exists('oss.deltares.nl-chain.pem'):
+        logger.info("Using certificate file {0}".format(pemfile))
+    else:
+        logger.error("Could not fine certificate file {0}".format(pemfile))
         return False
 
     return True
