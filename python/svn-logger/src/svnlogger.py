@@ -149,8 +149,8 @@ def call_rest_api(method, user, host, uri):
                                  data=dump,
                                  headers={'Authorization': 'Bearer ' + str(access_token),
                                           'Content-Type': 'application/json'},
-                                 verify='oss.deltares.nl-chain.pem')
-
+                                 verify=False)
+# turned off   verify='oss.deltares.nl-chain.pem'
         response.raise_for_status()
         logging.info("Successfully uploaded repository log " + dump)
         return True
@@ -174,8 +174,8 @@ def get_access_token():
                                      data={'grant_type': 'client_credentials',
                                            'client_id': client_id, 'client_secret': client_secret},
                                      headers={'Content-Type': 'application/x-www-form-urlencoded'},
-                                     verify='oss.deltares.nl-chain.pem')
-
+                                     verify=False)
+# turned off verify='oss.deltares.nl-chain.pem'
             response.raise_for_status()
             body = response.json()
             expiry_time = int(body['expires_in']) + time_stamp
