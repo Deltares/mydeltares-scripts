@@ -63,6 +63,8 @@ def init_ini_file():
 
         global apache_logfile
         global apache_logfile_name
+        global skip_users
+        global skip_methods
 
         url = config.get('general', 'url')
         client_id = config.get('general', 'client_id')
@@ -82,6 +84,14 @@ def init_ini_file():
         if len(log_dir) == 0:
             log_name = os.path.basename(log_file)
             log_file = os.path.join(SCRIPT_PATH, log_name)
+
+        skip_string = config.get('general', 'skip_users')
+        if (len(skip_string) > 0):
+            skip_users = skip_string.split(',')
+        else:
+            skip_users = []
+
+        skip_methods = ['GET']
 
     except configparser.NoOptionError:
         e = sys.exc_info()[1]
@@ -215,12 +225,27 @@ def write_cache():
         config.write(config_file)
 
 
+def check_request(method, user):
+    # do not process request if performed by following methods
+    for m in skip_methods:
+        if m == method:
+            return False
+
+    # do not process request if performed by following users
+    for u in skip_users:
+        if u == user:
+            return False
+
+    return True
+
+
 def handle_line(line):
     mo = lp.search(line)
     if mo:
         remote_host, remote_user, time_stamp, request_method, request_uri = mo.groups()
 
-        call_rest_api(request_method[:75], remote_user[:75], remote_host[:75], request_uri[:75])
+        if (check_request(request_method[:75], remote_user[:75])):
+            call_rest_api(request_method[:75], remote_user[:75], remote_host[:75], request_uri[:75])
 
 
 class ApacheLogFileHandler(FileSystemEventHandler):
