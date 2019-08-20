@@ -38,6 +38,8 @@ reconnect_sleep_time = 2
 retry_sleep_time = 1
 max_attempts = 5
 
+current_milli_time = lambda: int(round(time.time() * 1000))
+
 # remote_host, remote_user, request_method, request_uri, time_stamp, id?
 # 136.231.52.51 - - [03/Feb/2016:15:33:00 +0100] "OPTIONS /repos/delft3d/trunk HTTP/1.1" 401 381 "-" "SVN/1.8.8 (x86_64-pc-linux-gnu) serf/1.3.3"
 lp = re.compile(
@@ -91,7 +93,11 @@ def init_ini_file():
         else:
             skip_users = []
 
-        skip_methods = ['GET']
+        skip_string = config.get('general', 'skip_methods')
+        if (len(skip_string) > 0):
+            skip_methods = skip_string.split(',')
+        else:
+            skip_methods = ['GET']
 
     except configparser.NoOptionError:
         e = sys.exc_info()[1]
@@ -173,34 +179,30 @@ def call_rest_api(method, user, host, uri):
 def get_access_token():
     logger.debug("Retrieving access token")
 
-    time_stamp = time.time()
     global access_token
     global expiry_time
-    if expiry_time < time_stamp or access_token is None:
 
-        # Get a new access token
-        try:
-            response = requests.post(url + ACCESS_TOKEN_PATH,
-                                     data={'grant_type': 'client_credentials',
-                                           'client_id': client_id, 'client_secret': client_secret},
-                                     headers={'Content-Type': 'application/x-www-form-urlencoded'},
-                                     verify=False)
-# turned off verify='oss.deltares.nl-chain.pem'
-            response.raise_for_status()
-            body = response.json()
-            expiry_time = int(body['expires_in']) + time_stamp
-            access_token = body['access_token']
-            if access_token is None:
-                logger.error("No access token returned. Exiting program!")
-                return
-            logger.info("Successfully retrieved token " + str(access_token))
-
-        except:
-            e = sys.exc_info()[1]
-            logger.error("Error retrieving access token: %s" % e)
-
-    else:
-        logger.debug("Using cached access toke " + access_token)
+    # Get a new access token
+    try:
+        response = requests.post(url + ACCESS_TOKEN_PATH,
+                                 data={'grant_type': 'client_credentials',
+                                       'client_id': client_id, 'client_secret': client_secret},
+                                 headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                                 verify=False)
+        # turned off verify='oss.deltares.nl-chain.pem'
+        response.raise_for_status()
+        body = response.json()
+        exp_millis = int(body['expires_in'])*1000
+        expiry_time = exp_millis + current_milli_time()
+        access_token = body['access_token']
+        if access_token is None:
+            logger.error("No access token returned!")
+            return
+        logger.info("Successfully retrieved token " + str(access_token) + " expires in: " + str(exp_millis) + " millis")
+    except:
+        access_token = None
+        e = sys.exc_info()[1]
+        logger.error("Error retrieving access token: %s" % e)
 
 
 def read_cache():
@@ -271,14 +273,11 @@ class ApacheLogFileHandler(FileSystemEventHandler):
         if not os.path.basename(event.src_path).__eq__(apache_logfile_name):
             return
 
-        time_stamp = time.time()
         global access_token
-        if expiry_time < time_stamp or access_token is None:
+        if expiry_time < current_milli_time() or access_token is None:
             get_access_token()
             if access_token is None:
-                logger.error("No access token returned. Exiting program!")
                 return
-            logger.info("Successfully retrieved token " + str(access_token))
         else:
             logger.debug("Using cached access toke " + access_token)
 
