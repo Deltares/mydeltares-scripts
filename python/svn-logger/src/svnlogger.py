@@ -27,11 +27,10 @@ log_maxsize = 10000000  # 10mb
 # define cache variables
 access_token = None
 expiry_time = 0
-last_line = None
+last_line = 0
 
 apache_logfile = None
 apache_logfile_name = None
-apache_logfile_handle = None
 
 sleep_time = 0.1  # sleep in between polling for a new file when handling a logrotate
 reconnect_sleep_time = 2
@@ -113,12 +112,14 @@ def init_logging():
     if len(log_dir) > 0 and not os.path.isdir(log_dir):
         os.mkdir(log_dir)
 
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=log_level, datefmt='%Y/%m/%d %H:%M:%S')
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=log_level,
+                        datefmt='%Y/%m/%d %H:%M:%S')
     global logger
     logger = logging.getLogger("svnlogger")
     handler = logging.handlers.RotatingFileHandler(filename=log_file, maxBytes=log_maxsize, backupCount=5, delay=0)
     handler.setLevel(log_level)
-    handler.setFormatter(logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s',datefmt='%Y/%m/%d %H:%M:%S'))
+    handler.setFormatter(
+        logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y/%m/%d %H:%M:%S'))
     logger.addHandler(handler)
 
 
@@ -137,23 +138,14 @@ def check_variables():
     return True
 
 
-def open_file_at(logfile, lastline):
-    # ideally read up until just after the last known line, for now...
-    f = open(logfile, 'r')
-    # for now, just seek until the end of the file
-    for line in f.readlines():
-        if line == lastline:
-            print('found last line')
-            return f
-    # apparently last line wasn't found, so this file must only contain new lines, reopening at the start
-    print(f.tell())
-    f.seek(0, os.SEEK_SET)
-    print(f.tell())
-    return f
-
-
 def call_rest_api(method, user, host, uri):
     logger.debug("Calling REST API")
+
+    global access_token
+    if expiry_time < current_milli_time() or access_token is None:
+        get_access_token()
+        if access_token is None:
+            return
 
     dump = None
     try:
@@ -166,7 +158,7 @@ def call_rest_api(method, user, host, uri):
                                  headers={'Authorization': 'Bearer ' + str(access_token),
                                           'Content-Type': 'application/json'},
                                  verify=False)
-# turned off   verify='oss.deltares.nl-chain.pem'
+        # turned off   verify='oss.deltares.nl-chain.pem'
         response.raise_for_status()
         logging.info("Successfully uploaded repository log " + dump)
         return True
@@ -192,7 +184,7 @@ def get_access_token():
         # turned off verify='oss.deltares.nl-chain.pem'
         response.raise_for_status()
         body = response.json()
-        exp_millis = int(body['expires_in'])*1000
+        exp_millis = int(body['expires_in']) * 1000
         expiry_time = exp_millis + current_milli_time()
         access_token = body['access_token']
         if access_token is None:
@@ -212,7 +204,14 @@ def read_cache():
     config.read(ini_file)
 
     global last_line
-    last_line = config.get('cache', 'test.log', fallback=None)
+    cache_val = config.get('cache', 'test.log', fallback='0').strip()
+    if len(cache_val) == 0:
+        last_line = 0
+    else:
+        try:
+            last_line = int(cache_val)
+        except:
+            last_line = 0
 
     logger.info('last line is: "%s"' % last_line)
 
@@ -222,7 +221,7 @@ def write_cache():
 
     config = configparser.ConfigParser()
     config.add_section('cache')
-    config.set('cache', 'test.log', last_line)
+    config.set('cache', 'test.log', str(last_line))
     with open(ini_file, 'w') as config_file:
         config.write(config_file)
 
@@ -246,8 +245,28 @@ def handle_line(line):
     if mo:
         remote_host, remote_user, time_stamp, request_method, request_uri = mo.groups()
 
-        if (check_request(request_method[:75], remote_user[:75])):
+        if check_request(request_method[:75], remote_user[:75]):
             call_rest_api(request_method[:75], remote_user[:75], remote_host[:75], request_uri[:75])
+
+
+def read_modified_lines():
+    if not os.path.isfile(apache_logfile):
+        return None
+
+    global last_line, i
+    # ideally read up until just after the last known line, for now...
+    fh = open(apache_logfile, 'r')
+    for i, line in enumerate(fh):
+        if i < last_line:
+            continue
+        else:
+            handle_line(line)
+
+    fh.close()
+    i += 1
+    last_line = i
+    if last_line:
+        write_cache()
 
 
 class ApacheLogFileHandler(FileSystemEventHandler):
@@ -256,59 +275,39 @@ class ApacheLogFileHandler(FileSystemEventHandler):
         if not os.path.basename(event.src_path).__eq__(apache_logfile_name):
             return
 
-        global apache_logfile_handle
-        logging.debug(str(event))
-        apache_logfile_handle = open_file_at(apache_logfile, last_line)
+        # global apache_logfile_handle
+        logging.info("Apache Log Created")
+        global last_line
+        last_line = 0
         pass
 
     def on_deleted(self, event):
         if not os.path.basename(event.src_path).__eq__(apache_logfile_name):
             return
 
-        logging.debug(str(event))
-        apache_logfile_handle.close()
+        logging.info("Apache Log Deleted")
+        global last_line
+        last_line = 0
         pass
 
     def on_modified(self, event):
         if not os.path.basename(event.src_path).__eq__(apache_logfile_name):
             return
 
-        global access_token
-        if expiry_time < current_milli_time() or access_token is None:
-            get_access_token()
-            if access_token is None:
-                return
-        else:
-            logger.debug("Using cached access toke " + access_token)
-
-        global last_line
-        logging.debug(str(event))
-        for line in apache_logfile_handle.readlines():
-            handle_line(line)
-            last_line = line
-        if last_line:
-            write_cache()
+        read_modified_lines()
         pass
 
     def on_moved(self, event):
         if not os.path.basename(event.src_path).__eq__(apache_logfile_name):
             return
 
-        logging.debug(str(event))
-        apache_logfile_handle.close()
+        logging.info("Apache Log Moved")
+        global last_line
+        last_line = 0
         pass
-
-    # def on_any_event(self, event):
-    #     if not os.path.basename(event.src_path).__eq__(apache_logfile_name):
-    #         return
-    #
-    #     logging.debug(str(event))
-    #     pass
 
 
 def _main():
-    global apache_logfile_handle
-
     if not init_ini_file():
         print("Failed to initialize ini file!")
         return
@@ -320,9 +319,6 @@ def _main():
         return
 
     read_cache()
-
-    if os.path.isfile(apache_logfile):
-        apache_logfile_handle = open_file_at(apache_logfile, last_line)
 
     # start watching the apache log file for updates.
     event_handler = ApacheLogFileHandler()
