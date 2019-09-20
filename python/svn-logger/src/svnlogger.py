@@ -37,6 +37,8 @@ reconnect_sleep_time = 2
 retry_sleep_time = 1
 max_attempts = 5
 
+last_api_call = 0
+
 current_milli_time = lambda: int(round(time.time() * 1000))
 
 # remote_host, remote_user, request_method, request_uri, time_stamp, id?
@@ -142,6 +144,7 @@ def call_rest_api(method, user, host, uri):
     logger.debug("Calling REST API")
 
     global access_token
+    global last_api_call
     if expiry_time < current_milli_time() or access_token is None:
         get_access_token()
         if access_token is None:
@@ -160,7 +163,8 @@ def call_rest_api(method, user, host, uri):
                                  verify=False)
         # turned off   verify='oss.deltares.nl-chain.pem'
         response.raise_for_status()
-        logging.info("Successfully uploaded repository log " + dump)
+        logger.info("Successfully uploaded repository log " + dump)
+        last_api_call = current_milli_time()
         return True
     except:
         e = sys.exc_info()[1]
@@ -241,6 +245,10 @@ def check_request(method, user):
 
 
 def handle_line(line):
+    #throttle calls to API: no more than 1 API call per minute
+    if current_milli_time() < (last_api_call + 60000):
+        return
+
     mo = lp.search(line)
     if mo:
         remote_host, remote_user, time_stamp, request_method, request_uri = mo.groups()
