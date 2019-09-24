@@ -246,7 +246,7 @@ def check_request(method, user):
 
 def handle_line(line):
     #throttle calls to API: no more than 1 API call per minute
-    if current_milli_time() < (last_api_call + 60000):
+    if current_milli_time() < (last_api_call + 300000):
         return
 
     mo = lp.search(line)
