@@ -1,0 +1,74 @@
+// ### Groovy Sample ###
+// This script deletes banned users and their messages. At the end of the run a list of screennames is produced.
+// User these screennames to remove users from keycloak
+
+import com.liferay.message.boards.kernel.model.MBMessage;
+import com.liferay.message.boards.kernel.service.MBMessageLocalServiceUtil;
+import com.liferay.message.boards.kernel.service.MBBanLocalServiceUtil; 
+import com.liferay.document.library.kernel.service.DLAppServiceUtil;
+
+// ### Configuration settins ###
+long groupId = 183920;
+long[] classNameIds = [0];
+
+try {
+    bans = MBBanLocalServiceUtil.getBans(groupId, 0, 100);
+    deletedUsers = [];
+    failedUsers = [];
+    for (ban in bans) {
+        bannedUserId = ban.getBanUserId();
+        bannedUser = com.liferay.portal.kernel.service.UserLocalServiceUtil.getUser(bannedUserId);
+        out.printf("Retrieve and delete file entries for user %s (%s)\n", bannedUser.getScreenName(),bannedUser.getUserId());
+
+        try {
+		fileEntries = DLAppServiceUtil.getGroupFileEntries(groupId, bannedUser.getUserId(), 0, 100);
+                out.printf("file entries count: %s\n", fileEntries.size());
+                for(entry in fileEntries){
+  		    out.printf("Deleting File: %s - %s\n",entry.getFileEntryId(),entry.getFileName());
+                    try {
+                       DLAppServiceUtil.deleteFileEntry(entry.getFileEntryId());
+                    } catch (Exception e){
+        		     out.printf("failed to delete fileEntry %s for user %s: %s\n", entry.getFileEntryId(),bannedUser.getScreenName(), e.getMessage());
+                    }
+                }
+        } catch (Exception e){
+		out.printf("failed to get file entries for user %s: %s\n",bannedUser.getScreenName(), e.getMessage());
+        }
+
+        out.printf("Retrieve and delete MB entries for user %s (%s)\n", bannedUser.getScreenName(),bannedUser.getUserId());
+	try {
+		List<MBMessage> messages = MBMessageLocalServiceUtil.getUserDiscussionMessages(bannedUser.getUserId(), classNameIds, -1, -1, -1, null);
+                out.printf("messages count: %s\n", messages.size());
+		for (MBMessage message : messages) {
+   		  out.printf("Deleting Discussion: %s - %s\n",message.getClassNameId(),message.getMessageId());
+                   try {
+			MBMessageLocalServiceUtil.deleteMBMessage(message.getMessageId());
+                   } catch (Exception e){
+      		     out.printf("failed to delete message %s for user %s: %s\n", message.getMessageId(),bannedUser.getScreenName(), e.getMessage());
+                   }
+		}
+
+	} catch (Exception e){
+		out.printf("failed to get messages for user %s: %s\n",bannedUser.getScreenName(), e.getMessage());
+	}
+
+        try {
+            com.liferay.portal.kernel.service.UserLocalServiceUtil.deleteUser(bannedUser);
+            deletedUsers.add(bannedUser.getScreenName());
+        }catch (Exception e) {
+            failedUsers.add(bannedUser.getScreenName());
+        }
+    }
+
+    out.println("Failed users: ");
+    for (failedUser in failedUsers){
+       out.printf("\"%s\",",failedUser );
+    }
+
+    out.println("Successfully deleted users: ");
+    for (deletedUser in deletedUsers){
+       out.printf("\"%s\",",deletedUser );
+    }
+}  catch (Exception e){
+    out.println("general error " +  e.getMessage());
+}

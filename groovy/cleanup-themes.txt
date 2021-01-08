@@ -1,0 +1,16 @@
+// ### Groovy Sample ###
+count = com.liferay.portal.kernel.service.GroupLocalServiceUtil.getGroupsCount();
+out.println("count " + count);
+out.println("companyId, groupId, themeId, layoutSetId")
+
+for(counter=0; counter<count; counter+=100){
+	groups = com.liferay.portal.kernel.service.GroupLocalServiceUtil.getGroups(counter, counter + 100);
+	for(group in groups){
+		ps = group.getPublicLayoutSet();
+		themeId = ps.getThemeId();
+
+		if(themeId == 'deltaresfixedwidthcommunity_WAR_deltaresfixedwidthcommunitytheme'){
+	        	out.println(group.getCompanyId() + ';' + group.getGroupId() + ';' + ps.getThemeId() + ';' + ps.getLayoutSetId());
+	        }
+	}
+}

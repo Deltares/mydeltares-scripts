@@ -1,0 +1,34 @@
+// ### Groovy Sample ###
+// This script removes threads of which the Root message no longer exists.
+// - these threads cause the Recent Post to throw an error
+
+import com.liferay.message.boards.kernel.model.MBMessage;
+import com.liferay.message.boards.kernel.service.MBMessageLocalServiceUtil;
+import com.liferay.message.boards.kernel.service.MBBanLocalServiceUtil; 
+import com.liferay.message.boards.kernel.service.MBThreadLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLAppServiceUtil;
+
+long siteId=183920
+long testMessageId=3733947
+
+totThreadCount = MBThreadLocalServiceUtil.getMBThreadsCount();
+int start=0;
+int end=100;
+
+while(start < totThreadCount){
+    out.println("getting threads " + start + " - " + end);
+    threads = MBThreadLocalServiceUtil.getMBThreads(start,end)
+    for(thread in threads){
+    	if (thread.getGroupId() != siteId) continue;
+    	try{
+    	    com.liferay.message.boards.service.MBMessageLocalServiceUtil.getLastThreadMessage(thread.getThreadId(), 0);
+    	} catch(Exception e){
+    	    out.println("error thread " + thread.getThreadId() + " : " + e.getMessage());
+    	    thread.setRootMessageId(testMessageId);
+    	    com.liferay.message.boards.kernel.service.MBThreadLocalServiceUtil.deleteThread(thread);
+            out.println("thread deleted: " + thread.getThreadId());
+    	}    	
+    }
+    start=end;
+    end+=100
+}
