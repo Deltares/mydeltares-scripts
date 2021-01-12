@@ -6,6 +6,7 @@ import com.liferay.message.boards.kernel.model.MBMessage;
 import com.liferay.message.boards.kernel.service.MBMessageLocalServiceUtil;
 import com.liferay.message.boards.kernel.service.MBBanLocalServiceUtil; 
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
+import com.liferay.message.boards.kernel.service.MBThreadLocalServiceUtil;
 
 // ### Configuration settins ###
 long groupId = 183920;
@@ -42,6 +43,10 @@ try {
 		for (MBMessage message : messages) {
    		  out.printf("Deleting Discussion: %s - %s\n",message.getClassNameId(),message.getMessageId());
                    try {
+                	if (message.isRoot()){
+                		MBThreadLocalServiceUtil.deleteMBThread(message.getThread());
+                	}
+                	
 			MBMessageLocalServiceUtil.deleteMBMessage(message.getMessageId());
                    } catch (Exception e){
       		     out.printf("failed to delete message %s for user %s: %s\n", message.getMessageId(),bannedUser.getScreenName(), e.getMessage());
